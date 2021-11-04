@@ -11,10 +11,8 @@ typedef uint16_t u16;
 const u16 null = UINT16_MAX;
 struct Node
 {
-	u16 frame_number;
 	u16 prev;
 	u16 next;
-
 };
 
 struct LRU
