@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.19)
-project(3150A3 CUDA)
+project(3150A3 LANGUAGES CUDA CXX)
+enable_language(CUDA)
+
 set(CMAKE_CUDA_STANDARD 11)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
