@@ -1,2 +1,0 @@
-C:\Users\Jason\source\repos\3150-cuda\x64\Debug\3150-cuda.exe
-C:\Users\Jason\source\repos\3150-cuda\x64\Debug\3150-cuda.pdb
