@@ -1,0 +1,2 @@
+C:\Users\Jason\source\repos\3150-cuda\x64\Release\3150-cuda.exe
+C:\Users\Jason\OneDrive - CUHK-Shenzhen\CS\3150\A3\sjq\template\x64\Release\3150-cuda.exe
