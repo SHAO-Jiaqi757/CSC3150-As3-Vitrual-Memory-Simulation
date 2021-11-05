@@ -17,8 +17,10 @@ __device__ u32 get_physical_addr(VirtualMemory *vm, u32 addr);
 __device__ void page_fault_handler(VirtualMemory *vm, u16 page_number, u16 &frame_number);
 __device__ void init_LRU(VirtualMemory *vm)
 {
-	vm->LRU.nodes = (Node *)(vm->invert_page_table + vm->INVERT_PAGE_TABLE_SIZE); // initialize the start addresss of LRU nodes;
-	vm->LRU.count = 0;															  // empty LRU nodes;
+
+	int page_size = vm->PAGE_ENTRIES * 4;
+	vm->LRU.nodes = (Node *)(vm->invert_page_table + vm->PAGE_ENTRIES); // initialize the start addresss of LRU nodes;
+	vm->LRU.count = 0;													// empty LRU nodes;
 	// initialize the LRU.head and LRU.tail...
 
 	Node *head_ptr = vm->LRU.nodes;
@@ -28,8 +30,8 @@ __device__ void init_LRU(VirtualMemory *vm)
 	vm->LRU.head = head_ptr, vm->LRU.tail = tail_ptr;
 
 	vm->LRU.head->next = tail_idx, vm->LRU.tail->prev = head_idx;
-	vm->LRU.head->prev = null, vm->LRU.tail->next = null;
 
+	vm->LRU.head->prev = null, vm->LRU.tail->next = null;
 	for (int i = 1; i < vm->PAGE_ENTRIES + 1; i++)
 	{
 		vm->LRU.nodes[i].next = null;
@@ -107,15 +109,12 @@ __device__ void vm_init(VirtualMemory *vm, uchar *buffer, uchar *storage,
 
 __device__ uchar vm_read(VirtualMemory *vm, u32 addr)
 {
-	/* Complate vm_read function to read single element from data buffer */
-
 	u32 phy_addr = get_physical_addr(vm, addr);
 	return vm->buffer[phy_addr];
 }
 
 __device__ void vm_write(VirtualMemory *vm, u32 addr, uchar value)
 {
-	/* Complete vm_write function to write value into data buffer */
 	u32 phy_addr = get_physical_addr(vm, addr);
 	vm->buffer[phy_addr] = value;
 }
@@ -123,8 +122,7 @@ __device__ void vm_write(VirtualMemory *vm, u32 addr, uchar value)
 __device__ void vm_snapshot(VirtualMemory *vm, uchar *results, int offset,
 							int input_size)
 {
-	/* Complete snapshot function togther with vm_read to load elements from data
-	 * to result buffer */
+	/* to result buffer */
 	for (int i = 0; i < input_size; i++)
 	{
 		results[i + offset] = vm_read(vm, i);
@@ -146,12 +144,10 @@ __device__ bool is_page_fault(VirtualMemory *vm, u32 page_number, u16 &frame_num
 
 __device__ void page_fault_handler(VirtualMemory *vm, u16 page_number, u16 &frame_number)
 {
-	printf("Handle page number.. \n");
 	(*vm->pagefault_num_ptr)++;
 	// check whether the page table is full <= LRU size == page_entry
 	u16 LRU_size = vm->LRU.count;
 
-	printf("the LRU size is: %d \n", LRU_size);
 	u16 free_frame;
 
 	if (LRU_size >= vm->PAGE_ENTRIES) // full, use LRU swapping-in and swapping-out
@@ -170,8 +166,6 @@ __device__ void page_fault_handler(VirtualMemory *vm, u16 page_number, u16 &fram
 	{
 		free_frame = LRU_size;
 	}
-
-	printf("the free frame is: %d \n", free_frame);
 	// update the physical memory
 	for (int i = 0; i < vm->PAGESIZE; i++)
 		vm->buffer[free_frame * vm->PAGESIZE + i] = vm->storage[page_number * vm->PAGESIZE + i];
@@ -184,21 +178,16 @@ __device__ u32 get_physical_addr(VirtualMemory *vm, u32 addr)
 {
 	u16 page_number = addr / vm->PAGESIZE;
 	u32 offset = addr % vm->PAGESIZE;
-	printf("page number: %d, offset: %d \n", page_number, offset);
 	u16 frame_number;
-
 	bool page_fault = is_page_fault(vm, page_number, frame_number);
 	// check whether the addr is valid in page table.
 	if (page_fault)
 	{ // if page fault,
-		printf("page fault occur \n");
-
 		page_fault_handler(vm, page_number, frame_number);
 	}
 
 	update_LRU(vm, frame_number);
 
 	u32 phy_addr = frame_number * vm->PAGESIZE + offset;
-	printf("Physical addresss: %h \n", phy_addr);
 	return phy_addr;
 }

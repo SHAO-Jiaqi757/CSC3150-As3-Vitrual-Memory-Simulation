@@ -31,36 +31,35 @@ __device__ __managed__ uchar storage[STORAGE_SIZE];
 // page table
 extern __shared__ u32 pt[];
 
-__device__ void user_program(VirtualMemory* vm, uchar* input, uchar* results,
-	int input_size);
+__device__ void user_program(VirtualMemory *vm, uchar *input, uchar *results,
+							 int input_size);
 
 __global__ void mykernel(int input_size)
 {
 
 	// memory allocation for virtual_memory
 	// take shared memory as physical memory
-	__shared__ uchar data[PHYSICAL_MEM_SIZE];  // 32KB-data access in share memory
+	__shared__ uchar data[PHYSICAL_MEM_SIZE]; // 32KB-data access in share memory
 
 	VirtualMemory vm;
 	vm_init(&vm, data, storage, pt, &pagefault_num, PAGE_SIZE,
-		INVERT_PAGE_TABLE_SIZE, PHYSICAL_MEM_SIZE, STORAGE_SIZE,
-		PHYSICAL_MEM_SIZE / PAGE_SIZE);
-
+			INVERT_PAGE_TABLE_SIZE, PHYSICAL_MEM_SIZE, STORAGE_SIZE,
+			PHYSICAL_MEM_SIZE / PAGE_SIZE);
 	// user program the access pattern for testing paging
 	user_program(&vm, input, results, input_size);
 }
 
-__host__ void write_binaryFile(char* fileName, void* buffer, int bufferSize)
+__host__ void write_binaryFile(char *fileName, void *buffer, int bufferSize)
 {
-	FILE* fp;
+	FILE *fp;
 	fp = fopen(fileName, "wb");
 	fwrite(buffer, 1, bufferSize, fp);
 	fclose(fp);
 }
 
-__host__ int load_binaryFile(char* fileName, void* buffer, int bufferSize)
+__host__ int load_binaryFile(char *fileName, void *buffer, int bufferSize)
 {
-	FILE* fp;
+	FILE *fp;
 
 	fp = fopen(fileName, "rb");
 	if (!fp)
@@ -97,13 +96,13 @@ int main()
 	/* Launch kernel function in GPU, with single thread
 	and dynamically allocate INVERT_PAGE_TABLE_SIZE bytes of share memory,
 	which is used for variables declared as "extern __shared__" */
-	mykernel << <1, 1, INVERT_PAGE_TABLE_SIZE >> > (input_size);
+	mykernel<<<1, 1, INVERT_PAGE_TABLE_SIZE>>>(input_size);
 
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess)
 	{
 		fprintf(stderr, "mykernel launch failed: %s\n",
-			cudaGetErrorString(cudaStatus));
+				cudaGetErrorString(cudaStatus));
 		return 0;
 	}
 
