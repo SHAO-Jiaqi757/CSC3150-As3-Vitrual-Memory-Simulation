@@ -125,7 +125,7 @@ __device__ void vm_snapshot(VirtualMemory *vm, uchar *results, int offset,
 	/* to result buffer */
 	for (int i = 0; i < input_size; i++)
 	{
-		results[i + offset] = vm_read(vm, i);
+		results[i + offset] = vm_read<<<1, 4>>>(vm, i);
 	}
 }
 
