@@ -1,0 +1,3 @@
+/pvfsmnt/119010256/CSC3150_bonus/bonus/build/CMakeFiles/rebuild_cache.dir
+/pvfsmnt/119010256/CSC3150_bonus/bonus/build/CMakeFiles/edit_cache.dir
+/pvfsmnt/119010256/CSC3150_bonus/bonus/build/CMakeFiles/cuda.dir

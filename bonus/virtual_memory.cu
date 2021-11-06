@@ -104,7 +104,6 @@ __device__ void vm_init(VirtualMemory *vm, uchar *buffer, uchar *storage,
 	// before first vm_write or vm_read
 	init_invert_page_table(vm);
 
-	int page_size = vm->PAGE_ENTRIES * 4;
 	vm->LRU.nodes = (Node *)(vm->invert_page_table + vm->PAGE_ENTRIES); // initialize the start addresss of LRU nodes;
 	// initialize the LRU
 	init_LRU(vm);

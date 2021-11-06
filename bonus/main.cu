@@ -38,14 +38,14 @@ __device__ void user_program(VirtualMemory *vm, uchar *input, uchar *results,
 							 int input_size);
 __host__ void write_binaryFile(char *fileName, void *buffer, int bufferSize);
 
+extern __shared__ VirtualMemory vm;
 __global__ void mykernel(int input_size)
 {
 
 	int thread_id = getLocalThreadId();
 
 	__shared__ uchar data[PHYSICAL_MEM_SIZE]; // 32KB-data access in share memory
-
-	// __shared__ int priority;
+	// __shared__ VirtualMemory vm;
 
 	if (thread_id == 0)
 	{
@@ -59,13 +59,10 @@ __global__ void mykernel(int input_size)
 		{
 
 			printf("Thread Id: %d \n", thread_id);
-			// memory allocation for virtual_memory
-			// take shared memory as physical memory
-
-			VirtualMemory vm;
 			vm_init(&vm, data, storage, pt, &pagefault_num, PAGE_SIZE,
 					INVERT_PAGE_TABLE_SIZE, PHYSICAL_MEM_SIZE, STORAGE_SIZE,
 					PHYSICAL_MEM_SIZE / PAGE_SIZE);
+
 			user_program(&vm, input, results[thread_id], input_size);
 
 			init_LRU(&vm);
@@ -136,7 +133,7 @@ int main()
 	/* Launch kernel function in GPU, with single thread
 	and dynamically allocate INVERT_PAGE_TABLE_SIZE bytes of share memory,
 	which is used for variables declared as "extern __shared__" */
-	mykernel<<<1, 4, INVERT_PAGE_TABLE_SIZE>>>(input_size);
+	mykernel<<<1, 4, INVERT_PAGE_TABLE_SIZE * 2>>>(input_size);
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess)
 	{
