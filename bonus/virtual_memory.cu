@@ -93,7 +93,7 @@ __device__ void vm_init(VirtualMemory *vm, uchar *buffer, uchar *storage,
 	vm->storage = storage; // gloabel memory 128KB storage
 	vm->invert_page_table = invert_page_table;
 	vm->pagefault_num_ptr = pagefault_num_ptr;
-
+	*vm->pagefault_num_ptr = 0;
 	// init constants
 	vm->PAGESIZE = PAGESIZE;
 	vm->INVERT_PAGE_TABLE_SIZE = INVERT_PAGE_TABLE_SIZE;
@@ -138,7 +138,7 @@ __device__ bool is_page_fault(VirtualMemory *vm, u32 page_number, u16 &frame_num
 	int thread_id = getLocalThreadId();
 	for (int i = 0; i < vm->PAGE_ENTRIES; i++)
 	{
-		if (vm->invert_page_table[i] >> 2 == page_number && vm->invert_page_table[i] & 0x3 == thread_id)
+		if ((vm->invert_page_table[i] >> 2) == page_number && (vm->invert_page_table[i] & 0x3) == thread_id)
 		{
 			frame_number = i;
 			return false;
@@ -150,7 +150,7 @@ __device__ bool is_page_fault(VirtualMemory *vm, u32 page_number, u16 &frame_num
 __device__ void page_fault_handler(VirtualMemory *vm, u16 page_number, u16 &frame_number)
 {
 	int thread_id = getLocalThreadId();
-	printf("Thread id (page fault): %d \n", thread_id);
+	// printf("Thread id (page fault): %d \n", thread_id);
 	(*vm->pagefault_num_ptr)++;
 	// check whether the page table is full <= LRU size == page_entry
 	u16 LRU_size = vm->LRU.count;
@@ -178,7 +178,7 @@ __device__ void page_fault_handler(VirtualMemory *vm, u16 page_number, u16 &fram
 		vm->buffer[free_frame * vm->PAGESIZE + i] = vm->storage[page_number * vm->PAGESIZE + i];
 
 	// update the IPT
-	vm->invert_page_table[free_frame] = page_number << 2 + thread_id; // last two bit is thread_id
+	vm->invert_page_table[free_frame] = (page_number << 2) + thread_id; // last two bit is thread_id
 	frame_number = free_frame;
 }
 __device__ u32 get_physical_addr(VirtualMemory *vm, u32 addr)

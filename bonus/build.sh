@@ -1,8 +1,8 @@
-rm -r ./build
-mkdir -p build
+# rm -r ./build
+# mkdir -p build
 cp ./*.bin ./build/
 cd build
-cmake ..
+# cmake ..
 cmake --build .
 # salloc -N1 -n1 -t10
 # cd /path/to/build/

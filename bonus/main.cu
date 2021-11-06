@@ -44,14 +44,20 @@ __global__ void mykernel(int input_size)
 	int thread_id = getLocalThreadId();
 
 	__shared__ uchar data[PHYSICAL_MEM_SIZE]; // 32KB-data access in share memory
+
+	// __shared__ int priority;
+
 	if (thread_id == 0)
 	{
+		priority = 0;
 	}
+	__syncthreads();
 
 	while (1)
 	{
 		if (thread_id == priority)
 		{
+
 			printf("Thread Id: %d \n", thread_id);
 			// memory allocation for virtual_memory
 			// take shared memory as physical memory
@@ -65,21 +71,14 @@ __global__ void mykernel(int input_size)
 			init_LRU(&vm);
 			// clear the LRU ?
 			printf("input size: %d\n", input_size);
-
-			// if (thread_id == 0)
-			// 	write_binaryFile(output_file1, results, input_size);
-			// else if (thread_id == 1)
-			// 	write_binaryFile(output_file2, results, input_size);
-			// else if (thread_id == 2)
-			// 	write_binaryFile(output_file3, results, input_size);
-			// else
-			// 	write_binaryFile(output_file4, results, input_size);
-
 			printf("pagefault number is %d\n", pagefault_num);
 			priority++;
+			// printf("priority: %d\n", priority);
+			break;
 		}
 		else if (priority > 3)
 			break;
+		__syncthreads();
 	}
 }
 
