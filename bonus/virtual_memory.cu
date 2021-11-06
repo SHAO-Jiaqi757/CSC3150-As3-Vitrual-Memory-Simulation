@@ -2,7 +2,10 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <stdio.h>
-
+__device__ int getLocalThreadId()
+{
+	return (threadIdx.z * (blockDim.x * blockDim.y)) + (threadIdx.y * blockDim.x) + threadIdx.x;
+}
 __device__ void init_invert_page_table(VirtualMemory *vm)
 {
 
@@ -18,9 +21,7 @@ __device__ void page_fault_handler(VirtualMemory *vm, u16 page_number, u16 &fram
 __device__ void init_LRU(VirtualMemory *vm)
 {
 
-	int page_size = vm->PAGE_ENTRIES * 4;
-	vm->LRU.nodes = (Node *)(vm->invert_page_table + vm->PAGE_ENTRIES); // initialize the start addresss of LRU nodes;
-	vm->LRU.count = 0;													// empty LRU nodes;
+	vm->LRU.count = 0; // empty LRU nodes;
 	// initialize the LRU.head and LRU.tail...
 
 	Node *head_ptr = vm->LRU.nodes;
@@ -103,6 +104,8 @@ __device__ void vm_init(VirtualMemory *vm, uchar *buffer, uchar *storage,
 	// before first vm_write or vm_read
 	init_invert_page_table(vm);
 
+	int page_size = vm->PAGE_ENTRIES * 4;
+	vm->LRU.nodes = (Node *)(vm->invert_page_table + vm->PAGE_ENTRIES); // initialize the start addresss of LRU nodes;
 	// initialize the LRU
 	init_LRU(vm);
 }
@@ -122,18 +125,20 @@ __device__ void vm_write(VirtualMemory *vm, u32 addr, uchar value)
 __device__ void vm_snapshot(VirtualMemory *vm, uchar *results, int offset,
 							int input_size)
 {
+	// int thread_id = getLocalThreadId();
 	/* to result buffer */
 	for (int i = 0; i < input_size; i++)
 	{
-		results[i + offset] = vm_read<<<1, 4>>>(vm, i);
+		results[i + offset] = vm_read(vm, i);
 	}
 }
 
 __device__ bool is_page_fault(VirtualMemory *vm, u32 page_number, u16 &frame_number)
 {
+	int thread_id = getLocalThreadId();
 	for (int i = 0; i < vm->PAGE_ENTRIES; i++)
 	{
-		if (vm->invert_page_table[i] == page_number)
+		if (vm->invert_page_table[i] >> 2 == page_number && vm->invert_page_table[i] & 0x3 == thread_id)
 		{
 			frame_number = i;
 			return false;
@@ -144,6 +149,8 @@ __device__ bool is_page_fault(VirtualMemory *vm, u32 page_number, u16 &frame_num
 
 __device__ void page_fault_handler(VirtualMemory *vm, u16 page_number, u16 &frame_number)
 {
+	int thread_id = getLocalThreadId();
+	printf("Thread id (page fault): %d \n", thread_id);
 	(*vm->pagefault_num_ptr)++;
 	// check whether the page table is full <= LRU size == page_entry
 	u16 LRU_size = vm->LRU.count;
@@ -154,7 +161,7 @@ __device__ void page_fault_handler(VirtualMemory *vm, u16 page_number, u16 &fram
 	{
 		free_frame = get_LRU_frame_number(vm);
 
-		u32 old_vpn = vm->invert_page_table[free_frame];
+		u32 old_vpn = vm->invert_page_table[free_frame] >> 2;
 
 		// swap out
 		for (int i = 0; i < vm->PAGESIZE; i++)
@@ -171,7 +178,7 @@ __device__ void page_fault_handler(VirtualMemory *vm, u16 page_number, u16 &fram
 		vm->buffer[free_frame * vm->PAGESIZE + i] = vm->storage[page_number * vm->PAGESIZE + i];
 
 	// update the IPT
-	vm->invert_page_table[free_frame] = page_number;
+	vm->invert_page_table[free_frame] = page_number << 2 + thread_id; // last two bit is thread_id
 	frame_number = free_frame;
 }
 __device__ u32 get_physical_addr(VirtualMemory *vm, u32 addr)
